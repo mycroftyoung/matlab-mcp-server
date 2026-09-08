@@ -50,8 +50,7 @@ const realSchemaTemplate = `{
   "packages": [
     {
       "registryType": "mcpb",
-      "registryBaseUrl": "https://github.com",
-      "identifier": "matlab/matlab-mcp-server/releases/download/v{{.Version}}/{{.MCPBFilename}}",
+      "identifier": "https://github.com/matlab/matlab-mcp-server/releases/download/v{{.Version}}/{{.MCPBFilename}}",
       "fileSha256": "{{.FileSHA256}}",
       "version": "{{.Version}}",
       "transport": {
