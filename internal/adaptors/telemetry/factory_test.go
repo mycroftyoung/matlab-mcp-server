@@ -43,6 +43,9 @@ func TestNewFactory_HappyPath(t *testing.T) {
 	mockServerDefinition := &telemetrymocks.MockDefinition{}
 	defer mockServerDefinition.AssertExpectations(t)
 
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
+
 	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
 	defer mockOSVersionProvider.AssertExpectations(t)
 
@@ -57,6 +60,7 @@ func TestNewFactory_HappyPath(t *testing.T) {
 		mockOSLayer,
 		mockOSVersionProvider,
 		mockServerDefinition,
+		mockCorrelationIDProvider,
 	)
 
 	// Assert
@@ -85,6 +89,9 @@ func TestFactory_Telemetry_HappyPath(t *testing.T) {
 
 	mockServerDefinition := &telemetrymocks.MockDefinition{}
 	defer mockServerDefinition.AssertExpectations(t)
+
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
 
 	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
 	defer mockOSVersionProvider.AssertExpectations(t)
@@ -167,6 +174,7 @@ func TestFactory_Telemetry_HappyPath(t *testing.T) {
 		mockOSLayer,
 		mockOSVersionProvider,
 		mockServerDefinition,
+		mockCorrelationIDProvider,
 	)
 
 	// Act
@@ -200,6 +208,9 @@ func TestFactory_Telemetry_LoggerError(t *testing.T) {
 	mockServerDefinition := &telemetrymocks.MockDefinition{}
 	defer mockServerDefinition.AssertExpectations(t)
 
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
+
 	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
 	defer mockOSVersionProvider.AssertExpectations(t)
 
@@ -220,6 +231,7 @@ func TestFactory_Telemetry_LoggerError(t *testing.T) {
 		mockOSLayer,
 		mockOSVersionProvider,
 		mockServerDefinition,
+		mockCorrelationIDProvider,
 	)
 
 	// Act
@@ -253,6 +265,9 @@ func TestFactory_Telemetry_ConfigError(t *testing.T) {
 	mockServerDefinition := &telemetrymocks.MockDefinition{}
 	defer mockServerDefinition.AssertExpectations(t)
 
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
+
 	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
 	defer mockOSVersionProvider.AssertExpectations(t)
 
@@ -279,6 +294,7 @@ func TestFactory_Telemetry_ConfigError(t *testing.T) {
 		mockOSLayer,
 		mockOSVersionProvider,
 		mockServerDefinition,
+		mockCorrelationIDProvider,
 	)
 
 	// Act
@@ -311,6 +327,9 @@ func TestFactory_Telemetry_DirectoryError(t *testing.T) {
 
 	mockServerDefinition := &telemetrymocks.MockDefinition{}
 	defer mockServerDefinition.AssertExpectations(t)
+
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
 
 	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
 	defer mockOSVersionProvider.AssertExpectations(t)
@@ -349,6 +368,7 @@ func TestFactory_Telemetry_DirectoryError(t *testing.T) {
 		mockOSLayer,
 		mockOSVersionProvider,
 		mockServerDefinition,
+		mockCorrelationIDProvider,
 	)
 
 	// Act
@@ -381,6 +401,9 @@ func TestFactory_Telemetry_TelemetryDisabled(t *testing.T) {
 
 	mockServerDefinition := &telemetrymocks.MockDefinition{}
 	defer mockServerDefinition.AssertExpectations(t)
+
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
 
 	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
 	defer mockOSVersionProvider.AssertExpectations(t)
@@ -442,6 +465,7 @@ func TestFactory_Telemetry_TelemetryDisabled(t *testing.T) {
 		mockOSLayer,
 		mockOSVersionProvider,
 		mockServerDefinition,
+		mockCorrelationIDProvider,
 	)
 
 	// Act
@@ -474,6 +498,9 @@ func TestFactory_Telemetry_EmptyCollectorEndpoint(t *testing.T) {
 
 	mockServerDefinition := &telemetrymocks.MockDefinition{}
 	defer mockServerDefinition.AssertExpectations(t)
+
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
 
 	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
 	defer mockOSVersionProvider.AssertExpectations(t)
@@ -540,6 +567,7 @@ func TestFactory_Telemetry_EmptyCollectorEndpoint(t *testing.T) {
 		mockOSLayer,
 		mockOSVersionProvider,
 		mockServerDefinition,
+		mockCorrelationIDProvider,
 	)
 
 	// Act
@@ -572,6 +600,9 @@ func TestFactory_Telemetry_ExporterCreationError(t *testing.T) {
 
 	mockServerDefinition := &telemetrymocks.MockDefinition{}
 	defer mockServerDefinition.AssertExpectations(t)
+
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
 
 	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
 	defer mockOSVersionProvider.AssertExpectations(t)
@@ -628,6 +659,7 @@ func TestFactory_Telemetry_ExporterCreationError(t *testing.T) {
 		mockOSLayer,
 		mockOSVersionProvider,
 		mockServerDefinition,
+		mockCorrelationIDProvider,
 	)
 
 	// Act
@@ -660,6 +692,9 @@ func TestFactory_Telemetry_MeterProviderCreationError(t *testing.T) {
 
 	mockServerDefinition := &telemetrymocks.MockDefinition{}
 	defer mockServerDefinition.AssertExpectations(t)
+
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
 
 	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
 	defer mockOSVersionProvider.AssertExpectations(t)
@@ -734,6 +769,7 @@ func TestFactory_Telemetry_MeterProviderCreationError(t *testing.T) {
 		mockOSLayer,
 		mockOSVersionProvider,
 		mockServerDefinition,
+		mockCorrelationIDProvider,
 	)
 
 	// Act
@@ -766,6 +802,9 @@ func TestFactory_Telemetry_InstrumentCreationError(t *testing.T) {
 
 	mockServerDefinition := &telemetrymocks.MockDefinition{}
 	defer mockServerDefinition.AssertExpectations(t)
+
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
 
 	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
 	defer mockOSVersionProvider.AssertExpectations(t)
@@ -847,6 +886,7 @@ func TestFactory_Telemetry_InstrumentCreationError(t *testing.T) {
 		mockOSLayer,
 		mockOSVersionProvider,
 		mockServerDefinition,
+		mockCorrelationIDProvider,
 	)
 
 	// Act
@@ -879,6 +919,9 @@ func TestFactory_Telemetry_IsSingleton(t *testing.T) {
 
 	mockServerDefinition := &telemetrymocks.MockDefinition{}
 	defer mockServerDefinition.AssertExpectations(t)
+
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
 
 	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
 	defer mockOSVersionProvider.AssertExpectations(t)
@@ -961,6 +1004,7 @@ func TestFactory_Telemetry_IsSingleton(t *testing.T) {
 		mockOSLayer,
 		mockOSVersionProvider,
 		mockServerDefinition,
+		mockCorrelationIDProvider,
 	)
 
 	// Act
@@ -997,6 +1041,9 @@ func TestFactory_Telemetry_SingletonPreservesError(t *testing.T) {
 	mockServerDefinition := &telemetrymocks.MockDefinition{}
 	defer mockServerDefinition.AssertExpectations(t)
 
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
+
 	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
 	defer mockOSVersionProvider.AssertExpectations(t)
 
@@ -1023,6 +1070,7 @@ func TestFactory_Telemetry_SingletonPreservesError(t *testing.T) {
 		mockOSLayer,
 		mockOSVersionProvider,
 		mockServerDefinition,
+		mockCorrelationIDProvider,
 	)
 
 	// Act

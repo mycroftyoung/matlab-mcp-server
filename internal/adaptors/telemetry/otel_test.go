@@ -739,6 +739,164 @@ func TestOTELTelemetry_RecordToolCallRequest_HappyPath(t *testing.T) {
 	}
 }
 
+func TestOTELTelemetry_RecordToolCallRequest_EmitsCorrelationID(t *testing.T) {
+	// Arrange
+	mockInstrumentFactory := &telemetrymocks.MockInstrumentFactory{}
+	defer mockInstrumentFactory.AssertExpectations(t)
+
+	mockServerStartCounter := &instrumentsmocks.MockInt64Counter{}
+	defer mockServerStartCounter.AssertExpectations(t)
+
+	mockClientConnectionCounter := &instrumentsmocks.MockInt64Counter{}
+	defer mockClientConnectionCounter.AssertExpectations(t)
+
+	mockToolCallRequestCounter := &instrumentsmocks.MockInt64Counter{}
+	defer mockToolCallRequestCounter.AssertExpectations(t)
+
+	mockConfig := &configmocks.MockConfig{}
+	defer mockConfig.AssertExpectations(t)
+
+	mockOSLayer := &telemetrymocks.MockOSLayer{}
+	defer mockOSLayer.AssertExpectations(t)
+
+	mockServerDefinition := &telemetrymocks.MockDefinition{}
+	defer mockServerDefinition.AssertExpectations(t)
+
+	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
+	defer mockOSVersionProvider.AssertExpectations(t)
+
+	mockDirectory := &telemetrymocks.MockDirectory{}
+	defer mockDirectory.AssertExpectations(t)
+
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
+
+	testLogger := testutils.NewInspectableLogger()
+	meter := noop.NewMeterProvider().Meter("test")
+
+	expectedInstanceID := "test-instance-id"
+	expectedCorrelationID := "abc-123-session"
+
+	expectedAttributes := []attribute.KeyValue{
+		attribute.String("server.instance_id", expectedInstanceID),
+		attribute.String("tool.name", "evalMATLABCode"),
+		attribute.String("matlab.session.id", expectedCorrelationID),
+	}
+
+	mockInstrumentFactory.EXPECT().
+		NewInt64Counter(meter, "server.starts", "Number of times the server has started", "{start}").
+		Return(mockServerStartCounter, nil).
+		Once()
+
+	mockInstrumentFactory.EXPECT().
+		NewInt64Counter(meter, "server.client_connections", "Number of times a client connected to a server", "{connection}").
+		Return(mockClientConnectionCounter, nil).
+		Once()
+
+	mockInstrumentFactory.EXPECT().
+		NewInt64Counter(meter, "tool.calls_request", "Number of tool invocations", "{call}").
+		Return(mockToolCallRequestCounter, nil).
+		Once()
+
+	mockDirectory.EXPECT().
+		ID().
+		Return(expectedInstanceID).
+		Once()
+
+	mockCorrelationIDProvider.EXPECT().
+		CurrentCorrelationID(mock.Anything).
+		Return(expectedCorrelationID).
+		Once()
+
+	mockToolCallRequestCounter.EXPECT().
+		Add(mock.Anything, int64(1), expectedAttributes).
+		Once()
+
+	otelTelemetry, err := telemetry.NewOTELTelemetryForTestingWithCorrelationIDProvider(testLogger, meter, mockInstrumentFactory, mockConfig, mockDirectory, mockOSLayer, mockOSVersionProvider, mockServerDefinition, mockCorrelationIDProvider)
+	require.NoError(t, err)
+
+	// Act
+	otelTelemetry.RecordToolCallRequest(t.Context(), "evalMATLABCode", telemetry.ToolSourceBuiltin)
+}
+
+func TestOTELTelemetry_RecordToolCallRequest_OmitsCorrelationIDWhenEmpty(t *testing.T) {
+	// Arrange
+	mockInstrumentFactory := &telemetrymocks.MockInstrumentFactory{}
+	defer mockInstrumentFactory.AssertExpectations(t)
+
+	mockServerStartCounter := &instrumentsmocks.MockInt64Counter{}
+	defer mockServerStartCounter.AssertExpectations(t)
+
+	mockClientConnectionCounter := &instrumentsmocks.MockInt64Counter{}
+	defer mockClientConnectionCounter.AssertExpectations(t)
+
+	mockToolCallRequestCounter := &instrumentsmocks.MockInt64Counter{}
+	defer mockToolCallRequestCounter.AssertExpectations(t)
+
+	mockConfig := &configmocks.MockConfig{}
+	defer mockConfig.AssertExpectations(t)
+
+	mockOSLayer := &telemetrymocks.MockOSLayer{}
+	defer mockOSLayer.AssertExpectations(t)
+
+	mockServerDefinition := &telemetrymocks.MockDefinition{}
+	defer mockServerDefinition.AssertExpectations(t)
+
+	mockOSVersionProvider := &telemetrymocks.MockOSVersionProvider{}
+	defer mockOSVersionProvider.AssertExpectations(t)
+
+	mockDirectory := &telemetrymocks.MockDirectory{}
+	defer mockDirectory.AssertExpectations(t)
+
+	mockCorrelationIDProvider := &telemetrymocks.MockSessionCorrelationIDProvider{}
+	defer mockCorrelationIDProvider.AssertExpectations(t)
+
+	testLogger := testutils.NewInspectableLogger()
+	meter := noop.NewMeterProvider().Meter("test")
+
+	expectedInstanceID := "test-instance-id"
+
+	expectedAttributes := []attribute.KeyValue{
+		attribute.String("server.instance_id", expectedInstanceID),
+		attribute.String("tool.name", "evalMATLABCode"),
+	}
+
+	mockInstrumentFactory.EXPECT().
+		NewInt64Counter(meter, "server.starts", "Number of times the server has started", "{start}").
+		Return(mockServerStartCounter, nil).
+		Once()
+
+	mockInstrumentFactory.EXPECT().
+		NewInt64Counter(meter, "server.client_connections", "Number of times a client connected to a server", "{connection}").
+		Return(mockClientConnectionCounter, nil).
+		Once()
+
+	mockInstrumentFactory.EXPECT().
+		NewInt64Counter(meter, "tool.calls_request", "Number of tool invocations", "{call}").
+		Return(mockToolCallRequestCounter, nil).
+		Once()
+
+	mockDirectory.EXPECT().
+		ID().
+		Return(expectedInstanceID).
+		Once()
+
+	mockCorrelationIDProvider.EXPECT().
+		CurrentCorrelationID(mock.Anything).
+		Return("").
+		Once()
+
+	mockToolCallRequestCounter.EXPECT().
+		Add(mock.Anything, int64(1), expectedAttributes).
+		Once()
+
+	otelTelemetry, err := telemetry.NewOTELTelemetryForTestingWithCorrelationIDProvider(testLogger, meter, mockInstrumentFactory, mockConfig, mockDirectory, mockOSLayer, mockOSVersionProvider, mockServerDefinition, mockCorrelationIDProvider)
+	require.NoError(t, err)
+
+	// Act
+	otelTelemetry.RecordToolCallRequest(t.Context(), "evalMATLABCode", telemetry.ToolSourceBuiltin)
+}
+
 var hexPattern = regexp.MustCompile(`^[0-9a-f]{16}$`)
 
 func TestSHA256Prefix16_ReferenceHashMustNotChange(t *testing.T) {

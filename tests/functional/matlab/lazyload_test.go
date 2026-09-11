@@ -53,8 +53,8 @@ func (s *LazyLoadTestSuite) TestLazyLoad_MATLABStartsOnFirstToolCall() {
 	s.True(instanceEvents[0].HasEvalMatching(hasUserCode("disp('hello')")), "should have recorded the user eval")
 	s.Equal(
 		[]string{mockruntime.EventStarted, mockruntime.EventFeval, mockruntime.EventEval, mockruntime.EventEval},
-		eventTypesExcludingTitle(instanceEvents[0]),
-		"excluding the desktop connection-title evals, should have exactly: started, greeting feval, cd() eval, user eval",
+		eventTypesExcludingInfra(instanceEvents[0]),
+		"excluding infra evals (title + correlation ID), should have exactly: started, greeting feval, cd() eval, user eval",
 	)
 	s.Equal(expectedConnectTitleEvals, countTitleEvals(instanceEvents[0]),
 		"desktop connect should check the release to pick the title API, then read the title and write it back once each")
@@ -96,8 +96,8 @@ func (s *LazyLoadTestSuite) TestLazyLoad_SecondToolCallReusesSession() {
 	s.Require().Len(instanceEvents, 1, "only one mock MATLAB instance should have been created")
 	s.True(instanceEvents[0].HasEvalMatching(hasUserCode("disp('first')")), "should have recorded first user eval")
 	s.True(instanceEvents[0].HasEvalMatching(hasUserCode("disp('second')")), "should have recorded second user eval")
-	s.Equal(2, instanceEvents[0].CountEvent(mockruntime.EventEval)-countCdEvals(instanceEvents[0]),
-		"should have exactly two user evals (excluding cd evals)")
+	s.Equal(2, instanceEvents[0].CountEvent(mockruntime.EventEval)-countCdEvals(instanceEvents[0])-countCorrelationIDEvals(instanceEvents[0]),
+		"should have exactly two user evals (excluding cd and correlation ID evals)")
 }
 
 func (s *LazyLoadTestSuite) TestReconnection_AfterExit_MATLABRestartsOnNextToolCall() {
@@ -155,11 +155,29 @@ func countCdEvals(ie mockruntime.InstanceEvents) int {
 	return n
 }
 
+func countCorrelationIDEvals(ie mockruntime.InstanceEvents) int {
+	n := 0
+	for _, e := range ie.Events {
+		if isCorrelationIDEval(e) {
+			n++
+		}
+	}
+	return n
+}
+
+func isCorrelationIDEval(e mockruntime.Event) bool {
+	return e.Type == mockruntime.EventEval && strings.Contains(e.Code, "serviceprocess.getClientId")
+}
+
 func isTitleEvent(e mockruntime.Event) bool {
 	if e.Type != mockruntime.EventFeval {
 		return false
 	}
 	return e.Function == "eval" || e.Function == "isMATLABReleaseOlderThan"
+}
+
+func isInfraEvent(e mockruntime.Event) bool {
+	return isTitleEvent(e) || isCorrelationIDEval(e)
 }
 
 func countTitleEvals(ie mockruntime.InstanceEvents) int {
@@ -172,10 +190,10 @@ func countTitleEvals(ie mockruntime.InstanceEvents) int {
 	return n
 }
 
-func eventTypesExcludingTitle(ie mockruntime.InstanceEvents) []string {
+func eventTypesExcludingInfra(ie mockruntime.InstanceEvents) []string {
 	var types []string
 	for _, e := range ie.Events {
-		if isTitleEvent(e) {
+		if isInfraEvent(e) {
 			continue
 		}
 		types = append(types, e.Type)

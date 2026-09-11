@@ -80,8 +80,19 @@ func TestMATLABManager_StartMATLABSession_HappyPath(t *testing.T) {
 		Return(mockSessionClient, nil).
 		Once()
 
+	expectedCorrelationIDRequest := entities.EvalRequest{
+		Code: matlabmanager.CorrelationIDRetrievalCode,
+	}
+
+	expectedCorrelationID := "abc-123"
+
+	mockSessionClient.EXPECT().
+		Eval(expectedCtx, mockLogger.AsMockArg(), expectedCorrelationIDRequest).
+		Return(entities.EvalResponse{ConsoleOutput: expectedCorrelationID}, nil).
+		Once()
+
 	mockSessionStore.EXPECT().
-		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient")).
+		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient"), expectedCorrelationID).
 		Return(expectedSessionID).
 		Once()
 
@@ -186,8 +197,13 @@ func TestMATLABManager_StartMATLABSession_NoDesktop_GreetingReceivesShowMATLABDe
 		Return(mockSessionClient, nil).
 		Once()
 
+	mockSessionClient.EXPECT().
+		Eval(expectedCtx, mockLogger.AsMockArg(), entities.EvalRequest{Code: matlabmanager.CorrelationIDRetrievalCode}).
+		Return(entities.EvalResponse{ConsoleOutput: "abc-123"}, nil).
+		Once()
+
 	mockSessionStore.EXPECT().
-		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient")).
+		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient"), mock.AnythingOfType("string")).
 		Return(expectedSessionID).
 		Once()
 
@@ -292,8 +308,13 @@ func TestMATLABManager_StartMATLABSession_GreetingError_IsSwallowed(t *testing.T
 		Return(mockSessionClient, nil).
 		Once()
 
+	mockSessionClient.EXPECT().
+		Eval(expectedCtx, mockLogger.AsMockArg(), entities.EvalRequest{Code: matlabmanager.CorrelationIDRetrievalCode}).
+		Return(entities.EvalResponse{ConsoleOutput: "corr-id"}, nil).
+		Once()
+
 	mockSessionStore.EXPECT().
-		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient")).
+		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient"), mock.AnythingOfType("string")).
 		Return(expectedSessionID).
 		Once()
 
@@ -302,7 +323,6 @@ func TestMATLABManager_StartMATLABSession_GreetingError_IsSwallowed(t *testing.T
 		Return(clientInfo).
 		Once()
 
-		// gate greeting behind title so the Warn write can't race with the title task formatting the logger
 	titleArgsFormatted := make(chan struct{})
 
 	mockConnectionIndicator.EXPECT().
@@ -534,8 +554,19 @@ func TestMATLABManager_StartMATLABSession_AttachToExistingSession_HappyPath(t *t
 		Return(entities.PingResponse{IsAlive: true}).
 		Once()
 
+	expectedCorrelationIDRequest := entities.EvalRequest{
+		Code: matlabmanager.CorrelationIDRetrievalCode,
+	}
+
+	expectedCorrelationID := "abc-123"
+
+	mockSessionClient.EXPECT().
+		Eval(expectedCtx, mockLogger.AsMockArg(), expectedCorrelationIDRequest).
+		Return(entities.EvalResponse{ConsoleOutput: expectedCorrelationID}, nil).
+		Once()
+
 	mockSessionStore.EXPECT().
-		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient")).
+		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient"), expectedCorrelationID).
 		Return(expectedSessionID).
 		Once()
 
@@ -795,9 +826,14 @@ func TestMATLABManager_StartMATLABSession_LocalStopSession_EvalsExitThenCleanup(
 		Return(mockSessionClient, nil).
 		Once()
 
+	mockSessionClient.EXPECT().
+		Eval(expectedCtx, mockLogger.AsMockArg(), entities.EvalRequest{Code: matlabmanager.CorrelationIDRetrievalCode}).
+		Return(entities.EvalResponse{ConsoleOutput: "corr-id"}, nil).
+		Once()
+
 	mockSessionStore.EXPECT().
-		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient")).
-		Run(func(client matlabsessionstore.MATLABSessionClientWithCleanup) {
+		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient"), mock.AnythingOfType("string")).
+		Run(func(client matlabsessionstore.MATLABSessionClientWithCleanup, _ string) {
 			capturedClient = client
 		}).
 		Return(expectedSessionID).
@@ -917,9 +953,14 @@ func TestMATLABManager_StartMATLABSession_LocalStopSession_EvalError_SkipsCleanu
 		Return(mockSessionClient, nil).
 		Once()
 
+	mockSessionClient.EXPECT().
+		Eval(expectedCtx, mockLogger.AsMockArg(), entities.EvalRequest{Code: matlabmanager.CorrelationIDRetrievalCode}).
+		Return(entities.EvalResponse{ConsoleOutput: "corr-id"}, nil).
+		Once()
+
 	mockSessionStore.EXPECT().
-		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient")).
-		Run(func(client matlabsessionstore.MATLABSessionClientWithCleanup) {
+		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient"), mock.AnythingOfType("string")).
+		Run(func(client matlabsessionstore.MATLABSessionClientWithCleanup, _ string) {
 			capturedClient = client
 		}).
 		Return(expectedSessionID).
@@ -1038,9 +1079,14 @@ func TestMATLABManager_StartMATLABSession_LocalStopSession_PendingGreetingWithDe
 		Return(mockSessionClient, nil).
 		Once()
 
+	mockSessionClient.EXPECT().
+		Eval(expectedCtx, mockLogger.AsMockArg(), entities.EvalRequest{Code: matlabmanager.CorrelationIDRetrievalCode}).
+		Return(entities.EvalResponse{ConsoleOutput: "corr-id"}, nil).
+		Once()
+
 	mockSessionStore.EXPECT().
-		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient")).
-		Run(func(client matlabsessionstore.MATLABSessionClientWithCleanup) {
+		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient"), mock.AnythingOfType("string")).
+		Run(func(client matlabsessionstore.MATLABSessionClientWithCleanup, _ string) {
 			capturedClient = client
 		}).
 		Return(expectedSessionID).
@@ -1175,9 +1221,14 @@ func TestMATLABManager_StartMATLABSession_LocalStopSession_CleanupError_IsPropag
 		Return(mockSessionClient, nil).
 		Once()
 
+	mockSessionClient.EXPECT().
+		Eval(expectedCtx, mockLogger.AsMockArg(), entities.EvalRequest{Code: matlabmanager.CorrelationIDRetrievalCode}).
+		Return(entities.EvalResponse{ConsoleOutput: "corr-id"}, nil).
+		Once()
+
 	mockSessionStore.EXPECT().
-		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient")).
-		Run(func(client matlabsessionstore.MATLABSessionClientWithCleanup) {
+		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient"), mock.AnythingOfType("string")).
+		Run(func(client matlabsessionstore.MATLABSessionClientWithCleanup, _ string) {
 			capturedClient = client
 		}).
 		Return(expectedSessionID).
@@ -1293,9 +1344,14 @@ func TestMATLABManager_StartMATLABSession_AttachToExistingSession_StopSession_Re
 		Return(entities.PingResponse{IsAlive: true}).
 		Once()
 
+	mockSessionClient.EXPECT().
+		Eval(expectedCtx, mockLogger.AsMockArg(), entities.EvalRequest{Code: matlabmanager.CorrelationIDRetrievalCode}).
+		Return(entities.EvalResponse{ConsoleOutput: "corr-id"}, nil).
+		Once()
+
 	mockSessionStore.EXPECT().
-		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient")).
-		Run(func(client matlabsessionstore.MATLABSessionClientWithCleanup) {
+		Add(mock.AnythingOfType("*matlabmanager.cleanupSessionClient"), mock.AnythingOfType("string")).
+		Run(func(client matlabsessionstore.MATLABSessionClientWithCleanup, _ string) {
 			capturedClient = client
 		}).
 		Return(expectedSessionID).

@@ -21,10 +21,16 @@ type MATLABManagerAdaptor interface {
 	ShouldRestart() (bool, messages.Error)
 	StopMATLABSession(ctx context.Context, sessionLogger entities.Logger, sessionID entities.SessionID) error
 	GetMATLABSessionClient(ctx context.Context, sessionLogger entities.Logger, sessionID entities.SessionID) (entities.MATLABSessionClient, error)
+	GetSessionCorrelationID(sessionID entities.SessionID) string
+}
+
+type LoggerFactory interface {
+	GetGlobalLogger() (entities.Logger, messages.Error)
 }
 
 type GlobalMATLAB struct {
 	matlabManagerAdaptor MATLABManagerAdaptor
+	loggerFactory        LoggerFactory
 
 	lock              *sync.Mutex
 	startSessionError error
@@ -34,9 +40,11 @@ type GlobalMATLAB struct {
 
 func New(
 	matlabManagerAdaptor MATLABManagerAdaptor,
+	loggerFactory LoggerFactory,
 ) *GlobalMATLAB {
 	return &GlobalMATLAB{
 		matlabManagerAdaptor: matlabManagerAdaptor,
+		loggerFactory:        loggerFactory,
 
 		lock: &sync.Mutex{},
 	}
@@ -51,6 +59,21 @@ func (g *GlobalMATLAB) Client(ctx context.Context, logger entities.Logger) (enti
 	}
 
 	return g.getOrCreateClient(ctx, logger)
+}
+
+func (g *GlobalMATLAB) CurrentCorrelationID(ctx context.Context) string {
+	g.lock.Lock()
+	sessionID := g.sessionID
+	g.lock.Unlock()
+
+	var zero entities.SessionID
+	if sessionID == zero {
+		if logger, err := g.loggerFactory.GetGlobalLogger(); err == nil {
+			logger.Debug("No active MATLAB session; skipping correlation ID lookup")
+		}
+		return ""
+	}
+	return g.matlabManagerAdaptor.GetSessionCorrelationID(sessionID)
 }
 
 func (g *GlobalMATLAB) getOrCreateClient(ctx context.Context, logger entities.Logger) (entities.MATLABSessionClient, error) {

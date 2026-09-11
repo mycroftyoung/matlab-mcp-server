@@ -10,6 +10,12 @@ import (
 	"github.com/matlab/matlab-mcp-server/internal/entities"
 )
 
+func RetrieveCorrelationIDForTesting(ctx context.Context, sessionLogger entities.Logger, client entities.MATLABSessionClient) string {
+	return retrieveCorrelationID(ctx, sessionLogger, client)
+}
+
+const CorrelationIDRetrievalCode = correlationIDRetrievalCode
+
 func (m *MATLABManager) SetMATLABSessionConnectionRetryInterval(matlabSessionConnectionRetryInterval time.Duration) {
 	m.matlabSessionConnectionRetryInterval = matlabSessionConnectionRetryInterval
 }

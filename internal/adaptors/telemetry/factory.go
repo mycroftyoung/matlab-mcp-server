@@ -54,6 +54,10 @@ type Definition interface {
 	Name() string
 }
 
+type SessionCorrelationIDProvider interface {
+	CurrentCorrelationID(ctx context.Context) string
+}
+
 type ClientConnectionInfo struct {
 	Name             string
 	Title            string
@@ -88,15 +92,16 @@ type Telemetry interface {
 }
 
 type Factory struct {
-	loggerFactory        LoggerFactory
-	configFactory        ConfigFactory
-	exporterFactory      ExporterFactory
-	meterProviderFactory MeterProviderFactory
-	instrumentFactory    InstrumentFactory
-	directoryFactory     DirectoryFactory
-	osLayer              OSLayer
-	osVersionProvider    OSVersionProvider
-	serverDefinition     Definition
+	loggerFactory                LoggerFactory
+	configFactory                ConfigFactory
+	exporterFactory              ExporterFactory
+	meterProviderFactory         MeterProviderFactory
+	instrumentFactory            InstrumentFactory
+	directoryFactory             DirectoryFactory
+	osLayer                      OSLayer
+	osVersionProvider            OSVersionProvider
+	serverDefinition             Definition
+	sessionCorrelationIDProvider SessionCorrelationIDProvider
 
 	telemetryOnce  sync.Once
 	telemetryError messages.Error
@@ -113,17 +118,19 @@ func NewFactory(
 	osLayer OSLayer,
 	osVersionProvider OSVersionProvider,
 	definition Definition,
+	sessionCorrelationIDProvider SessionCorrelationIDProvider,
 ) *Factory {
 	return &Factory{
-		loggerFactory:        loggerFactory,
-		configFactory:        configFactory,
-		exporterFactory:      exporterFactory,
-		meterProviderFactory: meterProviderFactory,
-		instrumentFactory:    instrumentFactory,
-		directoryFactory:     directoryFactory,
-		osLayer:              osLayer,
-		osVersionProvider:    osVersionProvider,
-		serverDefinition:     definition,
+		loggerFactory:                loggerFactory,
+		configFactory:                configFactory,
+		exporterFactory:              exporterFactory,
+		meterProviderFactory:         meterProviderFactory,
+		instrumentFactory:            instrumentFactory,
+		directoryFactory:             directoryFactory,
+		osLayer:                      osLayer,
+		osVersionProvider:            osVersionProvider,
+		serverDefinition:             definition,
+		sessionCorrelationIDProvider: sessionCorrelationIDProvider,
 	}
 }
 
@@ -197,5 +204,6 @@ func (f *Factory) newOTELTelemetry() (Telemetry, messages.Error) {
 		f.osLayer,
 		f.osVersionProvider,
 		f.serverDefinition,
+		f.sessionCorrelationIDProvider,
 	)
 }

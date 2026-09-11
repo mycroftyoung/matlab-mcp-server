@@ -26,6 +26,7 @@ type MATLABManager interface {
 	StartMATLABSession(ctx context.Context, sessionLogger entities.Logger, startRequest entities.SessionDetails) (entities.SessionID, error)
 	StopMATLABSession(ctx context.Context, sessionLogger entities.Logger, sessionID entities.SessionID) error
 	GetMATLABSessionClient(ctx context.Context, sessionLogger entities.Logger, sessionID entities.SessionID) (entities.MATLABSessionClient, error)
+	GetSessionCorrelationID(sessionID entities.SessionID) string
 }
 
 type MATLABRootSelector interface {
@@ -113,6 +114,10 @@ func (s *SessionManager) StopMATLABSession(ctx context.Context, sessionLogger en
 
 func (s *SessionManager) GetMATLABSessionClient(ctx context.Context, sessionLogger entities.Logger, sessionID entities.SessionID) (entities.MATLABSessionClient, error) {
 	return s.matlabManager.GetMATLABSessionClient(ctx, sessionLogger, sessionID)
+}
+
+func (s *SessionManager) GetSessionCorrelationID(sessionID entities.SessionID) string {
+	return s.matlabManager.GetSessionCorrelationID(sessionID)
 }
 
 func (s *SessionManager) initializeStartupConfig(ctx context.Context, logger entities.Logger) error {

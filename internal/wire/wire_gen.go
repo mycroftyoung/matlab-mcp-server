@@ -72,7 +72,7 @@ import (
 	"github.com/matlab/matlab-mcp-server/internal/adaptors/telemetry/otel/instruments"
 	"github.com/matlab/matlab-mcp-server/internal/adaptors/telemetry/otel/meter/exporter"
 	"github.com/matlab/matlab-mcp-server/internal/adaptors/telemetry/otel/meter/provider"
-	watchdog2 "github.com/matlab/matlab-mcp-server/internal/adaptors/watchdog"
+	"github.com/matlab/matlab-mcp-server/internal/adaptors/watchdog"
 	"github.com/matlab/matlab-mcp-server/internal/adaptors/watchdog/process"
 	"github.com/matlab/matlab-mcp-server/internal/entities"
 	"github.com/matlab/matlab-mcp-server/internal/facades/filefacade"
@@ -91,7 +91,7 @@ import (
 	"github.com/matlab/matlab-mcp-server/internal/usecases/startmatlabsession"
 	"github.com/matlab/matlab-mcp-server/internal/usecases/stopmatlabsession"
 	"github.com/matlab/matlab-mcp-server/internal/usecases/utils/pathvalidator"
-	"github.com/matlab/matlab-mcp-server/internal/watchdog"
+	watchdog2 "github.com/matlab/matlab-mcp-server/internal/watchdog"
 	"github.com/matlab/matlab-mcp-server/internal/watchdog/processhandler"
 	client2 "github.com/matlab/matlab-mcp-server/internal/watchdog/transport/client"
 	server2 "github.com/matlab/matlab-mcp-server/internal/watchdog/transport/server"
@@ -117,43 +117,43 @@ func Initialize(serverDefinition ApplicationDefinition) *Application {
 	instrumentsFactory := instruments.NewFactory()
 	registryFacade := registryfacade.New()
 	osOS := os.New(osFacade, registryFacade)
-	telemetryFactory := telemetry.NewFactory(loggerFactory, factory, exporterFactory, providerFactory, instrumentsFactory, directoryFactory, osFacade, osOS, serverDefinition)
-	processManager := os.NewProcessManager(osFacade)
-	processHandler := processhandler.New(loggerFactory, processManager)
-	handlerFactory := handler.NewFactory(loggerFactory, processHandler)
-	serverFactory := server.NewFactory(osFacade)
-	factory2 := server2.NewFactory(serverFactory, loggerFactory, handlerFactory)
-	socketFactory := socket.NewFactory(directoryFactory, osFacade)
-	watchdogWatchdog := watchdog.New(loggerFactory, osFacade, processHandler, processManager, handlerFactory, factory2, socketFactory)
-	rootStore := rootstore.New()
-	clientInfoStore := clientinfostore.New()
 	fileFacade := filefacade.New()
 	getter := matlabroot.New(osFacade, fileFacade)
 	ioFacade := iofacade.New()
 	matlabversionGetter := matlabversion.New(osFacade, ioFacade)
 	matlabLocator := matlablocator.New(getter, matlabversionGetter)
 	matlabFiles := matlabfiles.New()
-	factory3 := directory2.NewFactory(osFacade, directoryFactory, matlabFiles, factory)
+	factory2 := directory2.NewFactory(osFacade, directoryFactory, matlabFiles, factory)
 	processDetails := processdetails.New(osFacade)
 	matlabProcessLauncher := processlauncher.New()
 	processFactory := process.New(osFacade, loggerFactory, directoryFactory, factory)
 	clientFactory := client.NewFactory()
-	factory4 := client2.NewFactory(osFacade, loggerFactory, clientFactory)
-	watchdog3 := watchdog2.New(processFactory, factory4, loggerFactory, socketFactory)
-	starter := localmatlabsession.NewStarter(factory3, processDetails, matlabProcessLauncher, watchdog3)
+	factory3 := client2.NewFactory(osFacade, loggerFactory, clientFactory)
+	socketFactory := socket.NewFactory(directoryFactory, osFacade)
+	watchdogWatchdog := watchdog.New(processFactory, factory3, loggerFactory, socketFactory)
+	starter := localmatlabsession.NewStarter(factory2, processDetails, matlabProcessLauncher, watchdogWatchdog)
 	matlabServices := matlabservices.New(matlabLocator, starter)
 	store := matlabsessionstore.New(loggerFactory, lifecycleSignaler)
 	matlabsessionclientFactory := matlabsessionclient.NewFactory(clientFactory)
 	appdatadirGetter := appdatadir.New(osFacade)
 	sessionDiscoverer := sessiondiscovery.New(appdatadirGetter, osFacade)
 	sessionSelector := sessionselector.New(factory, sessionDiscoverer)
+	clientInfoStore := clientinfostore.New()
 	connectionIndicator := connectionindicator.New(messageCatalog)
 	matlabManager := matlabmanager.New(factory, matlabServices, store, matlabsessionclientFactory, sessionSelector, clientInfoStore, connectionIndicator)
 	matlabRootSelector := matlabrootselector.New(factory, matlabManager)
+	rootStore := rootstore.New()
 	rootPathResolver := rootpathresolver.New(osFacade)
 	matlabStartingDirSelector := matlabstartingdirselector.New(factory, osFacade, rootStore, rootPathResolver)
 	sessionManager := sessionmanager.New(matlabManager, factory, matlabRootSelector, matlabStartingDirSelector)
-	globalMATLAB := globalmatlab.New(sessionManager)
+	globalMATLAB := globalmatlab.New(sessionManager, loggerFactory)
+	telemetryFactory := telemetry.NewFactory(loggerFactory, factory, exporterFactory, providerFactory, instrumentsFactory, directoryFactory, osFacade, osOS, serverDefinition, globalMATLAB)
+	processManager := os.NewProcessManager(osFacade)
+	processHandler := processhandler.New(loggerFactory, processManager)
+	handlerFactory := handler.NewFactory(loggerFactory, processHandler)
+	serverFactory := server.NewFactory(osFacade)
+	factory4 := server2.NewFactory(serverFactory, loggerFactory, handlerFactory)
+	watchdog3 := watchdog2.New(loggerFactory, osFacade, processHandler, processManager, handlerFactory, factory4, socketFactory)
 	sdkFactory := sdk.NewFactory(factory, serverDefinition, rootStore, clientInfoStore, loggerFactory, globalMATLAB, telemetryFactory)
 	usecase := listavailablematlabs.New(matlabManager)
 	tool := listavailablematlabs2.New(loggerFactory, telemetryFactory, usecase)
@@ -185,11 +185,11 @@ func Initialize(serverDefinition ApplicationDefinition) *Application {
 	serverServer := server3.New(sdkFactory, loggerFactory, lifecycleSignaler, configuratorConfigurator)
 	unixFacade := unix.New()
 	manager := resourcelimit.New(loggerFactory, unixFacade)
-	orchestratorOrchestrator := orchestrator.New(messageCatalog, lifecycleSignaler, serverDefinition, factory, serverServer, watchdog3, loggerFactory, telemetryFactory, processManager, directoryFactory, manager)
+	orchestratorOrchestrator := orchestrator.New(messageCatalog, lifecycleSignaler, serverDefinition, factory, serverServer, watchdogWatchdog, loggerFactory, telemetryFactory, processManager, directoryFactory, manager)
 	installationSteps := installationsteps.New()
 	addonManager := addonmanager.New(installationSteps)
-	mode := setupmatlab.New(osFacade, messageCatalog, loggerFactory, directoryFactory, watchdog3, globalMATLAB, addonManager)
-	modeSelector := modeselector.New(factory, parserParser, telemetryFactory, watchdogWatchdog, orchestratorOrchestrator, osFacade, lifecycleSignaler, loggerFactory, mode)
+	mode := setupmatlab.New(osFacade, messageCatalog, loggerFactory, directoryFactory, watchdogWatchdog, globalMATLAB, addonManager)
+	modeSelector := modeselector.New(factory, parserParser, telemetryFactory, watchdog3, orchestratorOrchestrator, osFacade, lifecycleSignaler, loggerFactory, mode)
 	application := &Application{
 		ModeSelector:              modeSelector,
 		MessageCatalog:            messageCatalog,

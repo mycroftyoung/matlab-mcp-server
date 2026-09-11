@@ -166,6 +166,7 @@ func Initialize(serverDefinition ApplicationDefinition) *Application {
 		wire.Bind(new(telemetry.OSLayer), new(*osfacade.OsFacade)),
 		wire.Bind(new(telemetry.OSVersionProvider), new(osadaptor.OS)),
 		wire.Bind(new(telemetry.Definition), new(ApplicationDefinition)),
+		wire.Bind(new(telemetry.SessionCorrelationIDProvider), new(*globalmatlab.GlobalMATLAB)),
 
 		// Telemetry Instruments
 		instruments.NewFactory,
@@ -353,6 +354,7 @@ func Initialize(serverDefinition ApplicationDefinition) *Application {
 		// Global MATLAB
 		globalmatlab.New,
 		wire.Bind(new(globalmatlab.MATLABManagerAdaptor), new(*sessionmanager.SessionManager)),
+		wire.Bind(new(globalmatlab.LoggerFactory), new(*logger.Factory)),
 
 		// Session Manager
 		sessionmanager.New,

@@ -29,11 +29,12 @@ type otelTelemetry struct {
 	meter             otel.Meter
 	instrumentFactory InstrumentFactory
 
-	config            Config
-	directory         Directory
-	osLayer           OSLayer
-	osVersionProvider OSVersionProvider
-	definition        Definition
+	config                       Config
+	directory                    Directory
+	osLayer                      OSLayer
+	osVersionProvider            OSVersionProvider
+	definition                   Definition
+	sessionCorrelationIDProvider SessionCorrelationIDProvider
 
 	// Instruments
 	serverStartCounter      instruments.Int64Counter
@@ -50,16 +51,18 @@ func newOTELTelemetry(
 	osLayer OSLayer,
 	osVersionProvider OSVersionProvider,
 	definition Definition,
+	sessionCorrelationIDProvider SessionCorrelationIDProvider,
 ) (*otelTelemetry, messages.Error) {
 	telemetry := &otelTelemetry{
-		logger:            logger,
-		meter:             meter,
-		instrumentFactory: instrumentFactory,
-		config:            cfg,
-		directory:         dir,
-		osLayer:           osLayer,
-		osVersionProvider: osVersionProvider,
-		definition:        definition,
+		logger:                       logger,
+		meter:                        meter,
+		instrumentFactory:            instrumentFactory,
+		config:                       cfg,
+		directory:                    dir,
+		osLayer:                      osLayer,
+		osVersionProvider:            osVersionProvider,
+		definition:                   definition,
+		sessionCorrelationIDProvider: sessionCorrelationIDProvider,
 	}
 
 	err := telemetry.createInstruments(logger)
@@ -101,6 +104,11 @@ func (t *otelTelemetry) RecordToolCallRequest(ctx context.Context, toolName stri
 
 	attributes.AddString("server.instance_id", t.directory.ID())
 	attributes.AddString("tool.name", toolNameAttribute(toolName, source))
+
+	correlationID := t.sessionCorrelationIDProvider.CurrentCorrelationID(ctx)
+	if correlationID != "" {
+		attributes.AddString("matlab.session.id", correlationID)
+	}
 
 	t.toolCallRequestCounter.Add(ctx, 1, attributes.AsOTEL())
 }

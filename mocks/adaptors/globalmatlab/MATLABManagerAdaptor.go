@@ -113,6 +113,57 @@ func (_c *MockMATLABManagerAdaptor_GetMATLABSessionClient_Call) RunAndReturn(run
 	return _c
 }
 
+// GetSessionCorrelationID provides a mock function for the type MockMATLABManagerAdaptor
+func (_mock *MockMATLABManagerAdaptor) GetSessionCorrelationID(sessionID entities.SessionID) string {
+	ret := _mock.Called(sessionID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetSessionCorrelationID")
+	}
+
+	var r0 string
+	if returnFunc, ok := ret.Get(0).(func(entities.SessionID) string); ok {
+		r0 = returnFunc(sessionID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	return r0
+}
+
+// MockMATLABManagerAdaptor_GetSessionCorrelationID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetSessionCorrelationID'
+type MockMATLABManagerAdaptor_GetSessionCorrelationID_Call struct {
+	*mock.Call
+}
+
+// GetSessionCorrelationID is a helper method to define mock.On call
+//   - sessionID entities.SessionID
+func (_e *MockMATLABManagerAdaptor_Expecter) GetSessionCorrelationID(sessionID interface{}) *MockMATLABManagerAdaptor_GetSessionCorrelationID_Call {
+	return &MockMATLABManagerAdaptor_GetSessionCorrelationID_Call{Call: _e.mock.On("GetSessionCorrelationID", sessionID)}
+}
+
+func (_c *MockMATLABManagerAdaptor_GetSessionCorrelationID_Call) Run(run func(sessionID entities.SessionID)) *MockMATLABManagerAdaptor_GetSessionCorrelationID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 entities.SessionID
+		if args[0] != nil {
+			arg0 = args[0].(entities.SessionID)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMATLABManagerAdaptor_GetSessionCorrelationID_Call) Return(s string) *MockMATLABManagerAdaptor_GetSessionCorrelationID_Call {
+	_c.Call.Return(s)
+	return _c
+}
+
+func (_c *MockMATLABManagerAdaptor_GetSessionCorrelationID_Call) RunAndReturn(run func(sessionID entities.SessionID) string) *MockMATLABManagerAdaptor_GetSessionCorrelationID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ShouldRestart provides a mock function for the type MockMATLABManagerAdaptor
 func (_mock *MockMATLABManagerAdaptor) ShouldRestart() (bool, messages.Error) {
 	ret := _mock.Called()

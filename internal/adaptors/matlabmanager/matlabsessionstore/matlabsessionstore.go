@@ -25,10 +25,15 @@ type LifecycleSignaler interface {
 	AddShutdownFunction(shutdownFcn func() error)
 }
 
+type storedSession struct {
+	client        MATLABSessionClientWithCleanup
+	correlationID string
+}
+
 type Store struct {
-	l       *sync.RWMutex
-	next    entities.SessionID
-	clients map[entities.SessionID]MATLABSessionClientWithCleanup
+	l        *sync.RWMutex
+	next     entities.SessionID
+	sessions map[entities.SessionID]storedSession
 }
 
 func New(
@@ -36,9 +41,9 @@ func New(
 	lifecycleSignaler LifecycleSignaler,
 ) *Store {
 	store := &Store{
-		l:       new(sync.RWMutex),
-		next:    1,
-		clients: map[entities.SessionID]MATLABSessionClientWithCleanup{},
+		l:        new(sync.RWMutex),
+		next:     1,
+		sessions: map[entities.SessionID]storedSession{},
 	}
 
 	lifecycleSignaler.AddShutdownFunction(func() error {
@@ -52,9 +57,9 @@ func New(
 
 		wg := new(errgroup.Group)
 
-		for sessionID, client := range store.clients {
+		for sessionID, session := range store.sessions {
 			wg.Go(func() error {
-				err := client.StopSession(context.Background(), logger)
+				err := session.client.StopSession(context.Background(), logger)
 				if err != nil {
 					return fmt.Errorf("error stopping session %v: %w", sessionID, err)
 				}
@@ -68,12 +73,12 @@ func New(
 	return store
 }
 
-func (s *Store) Add(client MATLABSessionClientWithCleanup) entities.SessionID {
+func (s *Store) Add(client MATLABSessionClientWithCleanup, correlationID string) entities.SessionID {
 	s.l.Lock()
 	defer s.l.Unlock()
 
 	sessionID := s.next
-	s.clients[sessionID] = client
+	s.sessions[sessionID] = storedSession{client: client, correlationID: correlationID}
 	s.next++
 	return entities.SessionID(sessionID)
 }
@@ -82,17 +87,29 @@ func (s *Store) Get(sessionID entities.SessionID) (MATLABSessionClientWithCleanu
 	s.l.RLock()
 	defer s.l.RUnlock()
 
-	client, exists := s.clients[sessionID]
+	session, exists := s.sessions[sessionID]
 	if !exists {
 		return nil, fmt.Errorf("session not found: %v", sessionID)
 	}
 
-	return client, nil
+	return session.client, nil
+}
+
+func (s *Store) CorrelationID(sessionID entities.SessionID) string {
+	s.l.RLock()
+	defer s.l.RUnlock()
+
+	session, exists := s.sessions[sessionID]
+	if !exists {
+		return ""
+	}
+
+	return session.correlationID
 }
 
 func (s *Store) Remove(sessionID entities.SessionID) {
 	s.l.Lock()
 	defer s.l.Unlock()
 
-	delete(s.clients, sessionID)
+	delete(s.sessions, sessionID)
 }

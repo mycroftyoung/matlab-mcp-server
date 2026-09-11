@@ -82,8 +82,8 @@ func TestNew_ShutdownFunctionCallsStopSessionOnAllClients(t *testing.T) {
 	store := matlabsessionstore.New(mockLoggerFactory, mockLifecycleSignaler)
 	require.NotNil(t, capturedShutdownFunc)
 
-	store.Add(mockClient1)
-	store.Add(mockClient2)
+	store.Add(mockClient1, "")
+	store.Add(mockClient2, "")
 
 	// Act
 	err := capturedShutdownFunc()
@@ -206,8 +206,8 @@ func TestNew_ShutdownFunctionReturnsErrorWhenStopSessionFails(t *testing.T) {
 	store := matlabsessionstore.New(mockLoggerFactory, mockLifecycleSignaler)
 	require.NotNil(t, capturedShutdownFunc)
 
-	store.Add(mockClient1)
-	store.Add(mockClient2)
+	store.Add(mockClient1, "")
+	store.Add(mockClient2, "")
 
 	// Act
 	err := capturedShutdownFunc()
@@ -235,7 +235,7 @@ func TestStore_Add_HappyPath(t *testing.T) {
 	store := matlabsessionstore.New(mockLoggerFactory, mockLifecycleSignaler)
 
 	// Act
-	sessionID := store.Add(mockClient)
+	sessionID := store.Add(mockClient, "")
 
 	// Assert
 	assert.Equal(t, entities.SessionID(1), sessionID)
@@ -266,9 +266,9 @@ func TestStore_Add_MultipleClients_ReturnsIncrementingIDs(t *testing.T) {
 	store := matlabsessionstore.New(mockLoggerFactory, mockLifecycleSignaler)
 
 	// Act
-	sessionID1 := store.Add(mockClient1)
-	sessionID2 := store.Add(mockClient2)
-	sessionID3 := store.Add(mockClient3)
+	sessionID1 := store.Add(mockClient1, "")
+	sessionID2 := store.Add(mockClient2, "")
+	sessionID3 := store.Add(mockClient3, "")
 
 	// Assert
 	assert.Equal(t, entities.SessionID(1), sessionID1)
@@ -293,7 +293,7 @@ func TestStore_Get_HappyPath(t *testing.T) {
 		Once()
 
 	store := matlabsessionstore.New(mockLoggerFactory, mockLifecycleSignaler)
-	sessionID := store.Add(mockClient)
+	sessionID := store.Add(mockClient, "")
 
 	// Act
 	retrievedClient, err := store.Get(sessionID)
@@ -346,7 +346,7 @@ func TestStore_Remove_HappyPath(t *testing.T) {
 		Once()
 
 	store := matlabsessionstore.New(mockLoggerFactory, mockLifecycleSignaler)
-	sessionID := store.Add(mockClient)
+	sessionID := store.Add(mockClient, "")
 
 	// Verify client exists before removal
 	retrievedClient, err := store.Get(sessionID)
@@ -408,9 +408,9 @@ func TestStore_AddGetRemove_MultipleClients(t *testing.T) {
 	store := matlabsessionstore.New(mockLoggerFactory, mockLifecycleSignaler)
 
 	// Act - Add multiple clients
-	sessionID1 := store.Add(mockClient1)
-	sessionID2 := store.Add(mockClient2)
-	sessionID3 := store.Add(mockClient3)
+	sessionID1 := store.Add(mockClient1, "")
+	sessionID2 := store.Add(mockClient2, "")
+	sessionID3 := store.Add(mockClient3, "")
 
 	// Assert - All clients can be retrieved
 	retrievedClient1, err := store.Get(sessionID1)
@@ -440,4 +440,54 @@ func TestStore_AddGetRemove_MultipleClients(t *testing.T) {
 	retrievedClient3, err = store.Get(sessionID3)
 	require.NoError(t, err)
 	assert.Equal(t, mockClient3, retrievedClient3)
+}
+
+func TestCorrelationID_HappyPath(t *testing.T) {
+	// Arrange
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	mockLifecycleSignaler := &mocks.MockLifecycleSignaler{}
+	defer mockLifecycleSignaler.AssertExpectations(t)
+
+	mockClient := &mocks.MockMATLABSessionClientWithCleanup{}
+	defer mockClient.AssertExpectations(t)
+
+	mockLifecycleSignaler.EXPECT().
+		AddShutdownFunction(mock.AnythingOfType("func() error")).
+		Return().
+		Once()
+
+	store := matlabsessionstore.New(mockLoggerFactory, mockLifecycleSignaler)
+
+	expectedCorrelationID := "session-abc-123"
+	sessionID := store.Add(mockClient, expectedCorrelationID)
+
+	// Act
+	result := store.CorrelationID(sessionID)
+
+	// Assert
+	assert.Equal(t, expectedCorrelationID, result)
+}
+
+func TestCorrelationID_UnknownSession_ReturnsEmpty(t *testing.T) {
+	// Arrange
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	mockLifecycleSignaler := &mocks.MockLifecycleSignaler{}
+	defer mockLifecycleSignaler.AssertExpectations(t)
+
+	mockLifecycleSignaler.EXPECT().
+		AddShutdownFunction(mock.AnythingOfType("func() error")).
+		Return().
+		Once()
+
+	store := matlabsessionstore.New(mockLoggerFactory, mockLifecycleSignaler)
+
+	// Act
+	result := store.CorrelationID(entities.SessionID(999))
+
+	// Assert
+	assert.Empty(t, result)
 }

@@ -48,6 +48,7 @@ func (m *MATLABManager) StartMATLABSession(ctx context.Context, sessionLogger en
 			}
 			return zeroValue, err
 		}
+		correlationID := retrieveCorrelationID(ctx, sessionLogger, embeddedConnectorClient)
 		gateClient, _, _ := m.indicateConnection(sessionLogger, embeddedConnectorClient, request.ShowMATLABDesktop)
 		client = newCleanupSessionClient(gateClient, func(ctx context.Context, sessionLogger entities.Logger) error {
 			if _, err := embeddedConnectorClient.Eval(ctx, sessionLogger, entities.EvalRequest{Code: "exit()"}); err != nil {
@@ -55,6 +56,9 @@ func (m *MATLABManager) StartMATLABSession(ctx context.Context, sessionLogger en
 			}
 			return sessionCleanup()
 		})
+		sessionID := m.sessionStore.Add(client, correlationID)
+		return sessionID, nil
+
 	case entities.AttachToExistingSession:
 		sessionLogger.Info("Attaching to existing session")
 
@@ -73,6 +77,7 @@ func (m *MATLABManager) StartMATLABSession(ctx context.Context, sessionLogger en
 			return zeroValue, ErrMATLABSessionNotAlive
 		}
 
+		correlationID := retrieveCorrelationID(ctx, sessionLogger, embeddedConnectorClient)
 		const showMATLABDesktop = true
 		gateClient, titleTask, originalTitle := m.indicateConnection(sessionLogger, embeddedConnectorClient, showMATLABDesktop)
 		client = newCleanupSessionClient(gateClient, func(ctx context.Context, sessionLogger entities.Logger) error {
@@ -84,13 +89,12 @@ func (m *MATLABManager) StartMATLABSession(ctx context.Context, sessionLogger en
 			sessionLogger.Debug("Skipping session stop for externally managed MATLAB session")
 			return nil
 		})
+		sessionID := m.sessionStore.Add(client, correlationID)
+		return sessionID, nil
+
 	default:
 		return zeroValue, fmt.Errorf("unknown request type: %T", request)
 	}
-
-	sessionID := m.sessionStore.Add(client)
-
-	return sessionID, nil
 }
 
 func (m *MATLABManager) indicateConnection(sessionLogger entities.Logger, client entities.MATLABSessionClient, showMATLABDesktop bool) (*greetingSessionClient, *asyncrunner.Task, *string) {

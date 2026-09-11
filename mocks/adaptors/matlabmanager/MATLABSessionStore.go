@@ -38,16 +38,16 @@ func (_m *MockMATLABSessionStore) EXPECT() *MockMATLABSessionStore_Expecter {
 }
 
 // Add provides a mock function for the type MockMATLABSessionStore
-func (_mock *MockMATLABSessionStore) Add(client matlabsessionstore.MATLABSessionClientWithCleanup) entities.SessionID {
-	ret := _mock.Called(client)
+func (_mock *MockMATLABSessionStore) Add(client matlabsessionstore.MATLABSessionClientWithCleanup, correlationID string) entities.SessionID {
+	ret := _mock.Called(client, correlationID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Add")
 	}
 
 	var r0 entities.SessionID
-	if returnFunc, ok := ret.Get(0).(func(matlabsessionstore.MATLABSessionClientWithCleanup) entities.SessionID); ok {
-		r0 = returnFunc(client)
+	if returnFunc, ok := ret.Get(0).(func(matlabsessionstore.MATLABSessionClientWithCleanup, string) entities.SessionID); ok {
+		r0 = returnFunc(client, correlationID)
 	} else {
 		r0 = ret.Get(0).(entities.SessionID)
 	}
@@ -61,18 +61,24 @@ type MockMATLABSessionStore_Add_Call struct {
 
 // Add is a helper method to define mock.On call
 //   - client matlabsessionstore.MATLABSessionClientWithCleanup
-func (_e *MockMATLABSessionStore_Expecter) Add(client interface{}) *MockMATLABSessionStore_Add_Call {
-	return &MockMATLABSessionStore_Add_Call{Call: _e.mock.On("Add", client)}
+//   - correlationID string
+func (_e *MockMATLABSessionStore_Expecter) Add(client interface{}, correlationID interface{}) *MockMATLABSessionStore_Add_Call {
+	return &MockMATLABSessionStore_Add_Call{Call: _e.mock.On("Add", client, correlationID)}
 }
 
-func (_c *MockMATLABSessionStore_Add_Call) Run(run func(client matlabsessionstore.MATLABSessionClientWithCleanup)) *MockMATLABSessionStore_Add_Call {
+func (_c *MockMATLABSessionStore_Add_Call) Run(run func(client matlabsessionstore.MATLABSessionClientWithCleanup, correlationID string)) *MockMATLABSessionStore_Add_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 matlabsessionstore.MATLABSessionClientWithCleanup
 		if args[0] != nil {
 			arg0 = args[0].(matlabsessionstore.MATLABSessionClientWithCleanup)
 		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -83,7 +89,58 @@ func (_c *MockMATLABSessionStore_Add_Call) Return(sessionID entities.SessionID) 
 	return _c
 }
 
-func (_c *MockMATLABSessionStore_Add_Call) RunAndReturn(run func(client matlabsessionstore.MATLABSessionClientWithCleanup) entities.SessionID) *MockMATLABSessionStore_Add_Call {
+func (_c *MockMATLABSessionStore_Add_Call) RunAndReturn(run func(client matlabsessionstore.MATLABSessionClientWithCleanup, correlationID string) entities.SessionID) *MockMATLABSessionStore_Add_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CorrelationID provides a mock function for the type MockMATLABSessionStore
+func (_mock *MockMATLABSessionStore) CorrelationID(sessionID entities.SessionID) string {
+	ret := _mock.Called(sessionID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CorrelationID")
+	}
+
+	var r0 string
+	if returnFunc, ok := ret.Get(0).(func(entities.SessionID) string); ok {
+		r0 = returnFunc(sessionID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	return r0
+}
+
+// MockMATLABSessionStore_CorrelationID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CorrelationID'
+type MockMATLABSessionStore_CorrelationID_Call struct {
+	*mock.Call
+}
+
+// CorrelationID is a helper method to define mock.On call
+//   - sessionID entities.SessionID
+func (_e *MockMATLABSessionStore_Expecter) CorrelationID(sessionID interface{}) *MockMATLABSessionStore_CorrelationID_Call {
+	return &MockMATLABSessionStore_CorrelationID_Call{Call: _e.mock.On("CorrelationID", sessionID)}
+}
+
+func (_c *MockMATLABSessionStore_CorrelationID_Call) Run(run func(sessionID entities.SessionID)) *MockMATLABSessionStore_CorrelationID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 entities.SessionID
+		if args[0] != nil {
+			arg0 = args[0].(entities.SessionID)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMATLABSessionStore_CorrelationID_Call) Return(s string) *MockMATLABSessionStore_CorrelationID_Call {
+	_c.Call.Return(s)
+	return _c
+}
+
+func (_c *MockMATLABSessionStore_CorrelationID_Call) RunAndReturn(run func(sessionID entities.SessionID) string) *MockMATLABSessionStore_CorrelationID_Call {
 	_c.Call.Return(run)
 	return _c
 }

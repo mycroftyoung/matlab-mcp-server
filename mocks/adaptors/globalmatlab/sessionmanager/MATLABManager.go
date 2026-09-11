@@ -112,6 +112,57 @@ func (_c *MockMATLABManager_GetMATLABSessionClient_Call) RunAndReturn(run func(c
 	return _c
 }
 
+// GetSessionCorrelationID provides a mock function for the type MockMATLABManager
+func (_mock *MockMATLABManager) GetSessionCorrelationID(sessionID entities.SessionID) string {
+	ret := _mock.Called(sessionID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetSessionCorrelationID")
+	}
+
+	var r0 string
+	if returnFunc, ok := ret.Get(0).(func(entities.SessionID) string); ok {
+		r0 = returnFunc(sessionID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	return r0
+}
+
+// MockMATLABManager_GetSessionCorrelationID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetSessionCorrelationID'
+type MockMATLABManager_GetSessionCorrelationID_Call struct {
+	*mock.Call
+}
+
+// GetSessionCorrelationID is a helper method to define mock.On call
+//   - sessionID entities.SessionID
+func (_e *MockMATLABManager_Expecter) GetSessionCorrelationID(sessionID interface{}) *MockMATLABManager_GetSessionCorrelationID_Call {
+	return &MockMATLABManager_GetSessionCorrelationID_Call{Call: _e.mock.On("GetSessionCorrelationID", sessionID)}
+}
+
+func (_c *MockMATLABManager_GetSessionCorrelationID_Call) Run(run func(sessionID entities.SessionID)) *MockMATLABManager_GetSessionCorrelationID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 entities.SessionID
+		if args[0] != nil {
+			arg0 = args[0].(entities.SessionID)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMATLABManager_GetSessionCorrelationID_Call) Return(s string) *MockMATLABManager_GetSessionCorrelationID_Call {
+	_c.Call.Return(s)
+	return _c
+}
+
+func (_c *MockMATLABManager_GetSessionCorrelationID_Call) RunAndReturn(run func(sessionID entities.SessionID) string) *MockMATLABManager_GetSessionCorrelationID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // StartMATLABSession provides a mock function for the type MockMATLABManager
 func (_mock *MockMATLABManager) StartMATLABSession(ctx context.Context, sessionLogger entities.Logger, startRequest entities.SessionDetails) (entities.SessionID, error) {
 	ret := _mock.Called(ctx, sessionLogger, startRequest)

@@ -24,8 +24,9 @@ type MATLABServices interface {
 }
 
 type MATLABSessionStore interface {
-	Add(client matlabsessionstore.MATLABSessionClientWithCleanup) entities.SessionID
+	Add(client matlabsessionstore.MATLABSessionClientWithCleanup, correlationID string) entities.SessionID
 	Get(sessionID entities.SessionID) (matlabsessionstore.MATLABSessionClientWithCleanup, error)
+	CorrelationID(sessionID entities.SessionID) string
 	Remove(sessionID entities.SessionID)
 }
 

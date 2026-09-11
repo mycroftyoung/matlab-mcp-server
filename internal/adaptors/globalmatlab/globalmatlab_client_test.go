@@ -40,7 +40,10 @@ func TestGlobalMATLAB_Client_HappyPath(t *testing.T) {
 		Return(expectedSessionClient, nil).
 		Once()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	client, err := globalMATLAB.Client(ctx, mockLogger)
@@ -65,7 +68,10 @@ func TestGlobalMATLAB_Client_StartSessionError(t *testing.T) {
 		Return(entities.SessionID(0), expectedError).
 		Once()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	client, err := globalMATLAB.Client(ctx, mockLogger)
@@ -90,7 +96,10 @@ func TestGlobalMATLAB_Client_ReturnsMATLABStartupCachedErrorOnSubsequentClientCa
 		Return(entities.SessionID(0), expectedError).
 		Once()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	client1, err1 := globalMATLAB.Client(ctx, mockLogger)
@@ -132,7 +141,10 @@ func TestGlobalMATLAB_Client_DiscoveryErrorNotCached_RetrySucceeds(t *testing.T)
 		Return(expectedSessionClient, nil).
 		Once()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	client1, err1 := globalMATLAB.Client(ctx, mockLogger)
@@ -160,7 +172,10 @@ func TestGlobalMATLAB_Client_DiscoveryErrorNotCached_RetryAlsoFails(t *testing.T
 		Return(entities.SessionID(0), sessionmanager.ErrFailedToAttachToMATLABSession).
 		Twice()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	client1, err1 := globalMATLAB.Client(ctx, mockLogger)
@@ -219,7 +234,10 @@ func TestGlobalMATLAB_Client_GetMATLABSessionClientError_RetrySucceeds(t *testin
 		Return(expectedSessionClient, nil).
 		Once()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	client, err := globalMATLAB.Client(ctx, mockLogger)
@@ -282,7 +300,10 @@ func TestGlobalMATLAB_Client_RestartOnGetClientFailure(t *testing.T) {
 		Return(secondSessionClient, nil).
 		Once()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	firstClient, firstErr := globalMATLAB.Client(ctx, mockLogger)
@@ -341,7 +362,10 @@ func TestGlobalMATLAB_Client_DoesNotErrorIfStopSessionError(t *testing.T) {
 		Return(expectedSessionClient, nil).
 		Once()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	client, err := globalMATLAB.Client(ctx, mockLogger)
@@ -388,7 +412,10 @@ func TestGlobalMATLAB_Client_RestartFailure_OnExistingSession(t *testing.T) {
 		Return(entities.SessionID(0), expectedError).
 		Once()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	client, err := globalMATLAB.Client(ctx, mockLogger)
@@ -450,7 +477,10 @@ func TestGlobalMATLAB_Client_RestartDiscoveryErrorNotCached_RetrySucceeds(t *tes
 		Return(expectedSessionClient, nil).
 		Once()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	client1, err1 := globalMATLAB.Client(ctx, mockLogger)
@@ -487,7 +517,10 @@ func TestGlobalMATLAB_Client_ConcurrentCallsWaitForCompletion(t *testing.T) {
 		Return(expectedSessionClient, nil).
 		Times(3)
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	var wg sync.WaitGroup
@@ -544,7 +577,10 @@ func TestGlobalMATLAB_Client_LostConnectionToSpecifiedMATLAB(t *testing.T) {
 		Return(false, nil).
 		Once()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	client, err := globalMATLAB.Client(ctx, mockLogger)
@@ -585,7 +621,10 @@ func TestGlobalMATLAB_Client_LostConnectionToSpecifiedMATLAB_CachedOnSubsequentC
 		Return(false, nil).
 		Once()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	client1, err1 := globalMATLAB.Client(ctx, mockLogger)
@@ -630,7 +669,10 @@ func TestGlobalMATLAB_Client_ShouldRestartError_CachedOnSubsequentCall(t *testin
 		Return(false, messages.AnError).
 		Once()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	client1, err1 := globalMATLAB.Client(ctx, mockLogger)
@@ -675,7 +717,10 @@ func TestGlobalMATLAB_Client_ShouldRestartError(t *testing.T) {
 		Return(false, messages.AnError).
 		Once()
 
-	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor)
+	mockLoggerFactory := &mocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	globalMATLAB := globalmatlab.New(mockMATLABManagerAdaptor, mockLoggerFactory)
 
 	// Act
 	client, err := globalMATLAB.Client(ctx, mockLogger)
