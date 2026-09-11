@@ -3,6 +3,8 @@
 package exporter_test
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/matlab/matlab-mcp-server/internal/adaptors/telemetry/otel/meter/exporter"
@@ -12,6 +14,7 @@ import (
 	exportermocks "github.com/matlab/matlab-mcp-server/mocks/adaptors/telemetry/otel/meter/exporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
 func TestNewFactory_HappyPath(t *testing.T) {
@@ -207,6 +210,206 @@ func TestFactory_New_InsecureEndpoint(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 	require.NotNil(t, result)
+}
+
+func TestFactory_New_EndpointWithoutPathExportsToDefaultMetricsPath(t *testing.T) {
+	// Arrange
+	mockLoggerFactory := &exportermocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	mockConfigFactory := &exportermocks.MockConfigFactory{}
+	defer mockConfigFactory.AssertExpectations(t)
+
+	mockOSLayer := &exportermocks.MockOSLayer{}
+	defer mockOSLayer.AssertExpectations(t)
+
+	mockConfig := &configmocks.MockConfig{}
+	defer mockConfig.AssertExpectations(t)
+
+	mockLogger := testutils.NewInspectableLogger()
+
+	expectedRequestPath := "/v1/metrics"
+	requestPaths := make(chan string, 1)
+	collector := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestPaths <- r.URL.Path
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer collector.Close()
+
+	mockLoggerFactory.EXPECT().
+		GetGlobalLogger().
+		Return(mockLogger, nil).
+		Once()
+
+	mockConfigFactory.EXPECT().
+		Config().
+		Return(mockConfig, nil).
+		Once()
+
+	mockOSLayer.EXPECT().
+		LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT").
+		Return("", false).
+		Once()
+
+	mockOSLayer.EXPECT().
+		LookupEnv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT").
+		Return("", false).
+		Once()
+
+	mockConfig.EXPECT().
+		TelemetryCollectorEndpoint().
+		Return(collector.URL).
+		Once()
+
+	mockConfig.EXPECT().
+		TelemetryCollectorEndpointInsecure().
+		Return(false).
+		Once()
+
+	factory := exporter.NewFactory(mockLoggerFactory, mockConfigFactory, mockOSLayer)
+
+	// Act
+	result, messagesErr := factory.New()
+	require.NoError(t, messagesErr)
+	exportErr := result.Export(t.Context(), &metricdata.ResourceMetrics{})
+
+	// Assert
+	require.NoError(t, exportErr)
+	require.Equal(t, expectedRequestPath, <-requestPaths)
+}
+
+func TestFactory_New_EndpointWithRootPathExportsToDefaultMetricsPath(t *testing.T) {
+	// Arrange
+	mockLoggerFactory := &exportermocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	mockConfigFactory := &exportermocks.MockConfigFactory{}
+	defer mockConfigFactory.AssertExpectations(t)
+
+	mockOSLayer := &exportermocks.MockOSLayer{}
+	defer mockOSLayer.AssertExpectations(t)
+
+	mockConfig := &configmocks.MockConfig{}
+	defer mockConfig.AssertExpectations(t)
+
+	mockLogger := testutils.NewInspectableLogger()
+
+	expectedRequestPath := "/v1/metrics"
+	requestPaths := make(chan string, 1)
+	collector := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestPaths <- r.URL.Path
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer collector.Close()
+
+	expectedEndpoint := collector.URL + "/"
+
+	mockLoggerFactory.EXPECT().
+		GetGlobalLogger().
+		Return(mockLogger, nil).
+		Once()
+
+	mockConfigFactory.EXPECT().
+		Config().
+		Return(mockConfig, nil).
+		Once()
+
+	mockOSLayer.EXPECT().
+		LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT").
+		Return("", false).
+		Once()
+
+	mockOSLayer.EXPECT().
+		LookupEnv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT").
+		Return("", false).
+		Once()
+
+	mockConfig.EXPECT().
+		TelemetryCollectorEndpoint().
+		Return(expectedEndpoint).
+		Once()
+
+	mockConfig.EXPECT().
+		TelemetryCollectorEndpointInsecure().
+		Return(false).
+		Once()
+
+	factory := exporter.NewFactory(mockLoggerFactory, mockConfigFactory, mockOSLayer)
+
+	// Act
+	result, messagesErr := factory.New()
+	require.NoError(t, messagesErr)
+	exportErr := result.Export(t.Context(), &metricdata.ResourceMetrics{})
+
+	// Assert
+	require.NoError(t, exportErr)
+	require.Equal(t, expectedRequestPath, <-requestPaths)
+}
+
+func TestFactory_New_EndpointWithPathExportsToThatPath(t *testing.T) {
+	// Arrange
+	mockLoggerFactory := &exportermocks.MockLoggerFactory{}
+	defer mockLoggerFactory.AssertExpectations(t)
+
+	mockConfigFactory := &exportermocks.MockConfigFactory{}
+	defer mockConfigFactory.AssertExpectations(t)
+
+	mockOSLayer := &exportermocks.MockOSLayer{}
+	defer mockOSLayer.AssertExpectations(t)
+
+	mockConfig := &configmocks.MockConfig{}
+	defer mockConfig.AssertExpectations(t)
+
+	mockLogger := testutils.NewInspectableLogger()
+
+	expectedRequestPath := "/otlp/v1/metrics"
+	requestPaths := make(chan string, 1)
+	collector := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestPaths <- r.URL.Path
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer collector.Close()
+
+	mockLoggerFactory.EXPECT().
+		GetGlobalLogger().
+		Return(mockLogger, nil).
+		Once()
+
+	mockConfigFactory.EXPECT().
+		Config().
+		Return(mockConfig, nil).
+		Once()
+
+	mockOSLayer.EXPECT().
+		LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT").
+		Return("", false).
+		Once()
+
+	mockOSLayer.EXPECT().
+		LookupEnv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT").
+		Return("", false).
+		Once()
+
+	mockConfig.EXPECT().
+		TelemetryCollectorEndpoint().
+		Return(collector.URL + expectedRequestPath).
+		Once()
+
+	mockConfig.EXPECT().
+		TelemetryCollectorEndpointInsecure().
+		Return(false).
+		Once()
+
+	factory := exporter.NewFactory(mockLoggerFactory, mockConfigFactory, mockOSLayer)
+
+	// Act
+	result, messagesErr := factory.New()
+	require.NoError(t, messagesErr)
+	exportErr := result.Export(t.Context(), &metricdata.ResourceMetrics{})
+
+	// Assert
+	require.NoError(t, exportErr)
+	require.Equal(t, expectedRequestPath, <-requestPaths)
 }
 
 func TestFactory_New_OTELEndpointEnvVarSet(t *testing.T) {

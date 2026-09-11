@@ -4,6 +4,7 @@ package exporter
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/matlab/matlab-mcp-server/internal/adaptors/application/config"
 	"github.com/matlab/matlab-mcp-server/internal/adaptors/telemetry/otel"
@@ -11,6 +12,8 @@ import (
 	"github.com/matlab/matlab-mcp-server/internal/messages"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 )
+
+const defaultMetricsSignalPath = "/v1/metrics"
 
 type LoggerFactory interface {
 	GetGlobalLogger() (entities.Logger, messages.Error)
@@ -64,6 +67,16 @@ func (f *Factory) New() (otel.MetricExporter, messages.Error) {
 		endpoint := cfg.TelemetryCollectorEndpoint()
 		logger.With("endpoint", endpoint).Debug("Using CLI parameter for OTLP HTTP endpoint")
 		options = append(options, otlpmetrichttp.WithEndpointURL(endpoint))
+
+		// otlpmetrichttp v1.46.0 stopped appending the metrics signal path to a
+		// path-less endpoint URL, normalizing it to "/" instead. WithURLPath only
+		// takes precedence when it follows WithEndpointURL.
+		parsedEndpoint, parseErr := url.Parse(endpoint)
+		if parseErr != nil {
+			logger.WithError(parseErr).Warn("Could not determine the OTLP HTTP signal path")
+		} else if parsedEndpoint.Path == "" || parsedEndpoint.Path == "/" {
+			options = append(options, otlpmetrichttp.WithURLPath(defaultMetricsSignalPath))
+		}
 	}
 
 	if cfg.TelemetryCollectorEndpointInsecure() {
