@@ -5,8 +5,12 @@
 package system_test
 
 import (
+	"encoding/json"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,6 +24,8 @@ const (
 	// magicSquareToolHash is sha256(magicSquareToolName)[:16], the value the
 	// server must emit for the extension tool instead of the cleartext name.
 	magicSquareToolHash = "5b82b619eb287ccc"
+
+	bakedEndpointSourceFile = "internal/adaptors/application/parameter/defaultparameters/endpoint_generated.go"
 )
 
 type TelemetryTestSuite struct {
@@ -149,6 +155,100 @@ func (s *TelemetryTestSuite) TestTelemetry_ToolCallRequestTelemetry() {
 	containsCleartext, err := exports.ContainsString(magicSquareToolName)
 	s.Require().NoError(err)
 	s.False(containsCleartext, "cleartext extension tool name must never reach the collector")
+}
+
+func (s *TelemetryTestSuite) TestTelemetry_BakedEndpointExportsWithoutBeingConfigured() {
+	otelCollector := otel.StartCollector(s.T(), otel.DefaultConfig())
+	defer otelCollector.Stop(s.T())
+
+	serverPath := s.bakeServerBinary(otelCollector.Endpoint())
+
+	// OTLP environment variables would override the baked default.
+	cmd := exec.Command(serverPath, "--version") //nolint:gosec // Trusted test path
+	cmd.Env = environmentWithoutOTLPEndpoints()
+	_, err := cmd.CombinedOutput()
+	s.Require().NoError(err, "version flag should execute successfully")
+
+	telemetryTimeout := 30 * time.Second
+	exports := otelCollector.WaitForMetrics(
+		s.T(),
+		telemetryTimeout,
+		func(t otel.Telemetry) bool {
+			return len(t) >= 1
+		},
+		"expected startup telemetry within %s", telemetryTimeout,
+	)
+	otelCollector.Stop(s.T())
+
+	s.Require().Len(exports, 1)
+
+	metric := exports[0].
+		ResourceMetrics().At(0).
+		ScopeMetrics().At(0).
+		Metrics().At(0)
+
+	s.Equal("server.starts", metric.Name())
+
+	// Nothing supplied an endpoint at runtime, so exporting at all proves the baked one was used.
+	attrs := metric.Sum().DataPoints().At(0).Attributes()
+
+	specifiedParameters, exists := attrs.Get("server.specified_parameters")
+	s.Require().True(exists, "server.specified_parameters attribute should exist")
+
+	paramValues := specifiedParameters.Slice()
+	params := make([]string, paramValues.Len())
+	for i := 0; i < paramValues.Len(); i++ {
+		params[i] = paramValues.At(i).Str()
+	}
+	s.ElementsMatch([]string{"VersionMode"}, params)
+}
+
+// An overlay keeps the generated source out of the source tree.
+func (s *TelemetryTestSuite) bakeServerBinary(endpoint string) string {
+	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	s.Require().NoError(err)
+
+	tempDir := s.T().TempDir()
+	generatedFile := filepath.Join(tempDir, filepath.Base(bakedEndpointSourceFile))
+
+	generate := exec.Command("go", "run", "./cmd/generate-telemetry-endpoint", generatedFile) //nolint:gosec // Trusted test path
+	generate.Dir = repoRoot
+	generate.Env = append(os.Environ(), "TELEMETRY_COLLECTOR_ENDPOINT="+endpoint)
+	output, err := generate.CombinedOutput()
+	s.Require().NoError(err, "generating the endpoint source failed: %s", output)
+
+	overlay, err := json.Marshal(map[string]map[string]string{
+		"Replace": {filepath.Join(repoRoot, bakedEndpointSourceFile): generatedFile},
+	})
+	s.Require().NoError(err)
+
+	overlayFile := filepath.Join(tempDir, "overlay.json")
+	s.Require().NoError(os.WriteFile(overlayFile, overlay, 0o600))
+
+	binaryPath := filepath.Join(tempDir, "matlab-mcp-server")
+	build := exec.Command("go", "build", //nolint:gosec // Trusted test path
+		"-tags", "release",
+		"-overlay", overlayFile,
+		"-o", binaryPath,
+		"./cmd/matlab-mcp-server",
+	)
+	build.Dir = repoRoot
+	output, err = build.CombinedOutput()
+	s.Require().NoError(err, "building the server failed: %s", output)
+
+	return binaryPath
+}
+
+func environmentWithoutOTLPEndpoints() []string {
+	environment := []string{}
+	for _, entry := range os.Environ() {
+		name, _, _ := strings.Cut(entry, "=")
+		if name == "OTEL_EXPORTER_OTLP_ENDPOINT" || name == "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT" {
+			continue
+		}
+		environment = append(environment, entry)
+	}
+	return environment
 }
 
 func TestTelemetrySuite(t *testing.T) {

@@ -253,8 +253,8 @@ func TelemetryCollectorEndpoint() *parameter.Parameter[string] {
 		/* hiddenFlag */ true,
 		/* envVarName */ envVarNamePrefix+"TELEMETRY_COLLECTOR_ENDPOINT",
 		/* descriptionKey */ messages.CLIMessages_InternalUseDescription,
-		/* defaultValue */ "",
-		/* recordToLog */ true,
+		/* defaultValue */ defaultTelemetryCollectorEndpoint,
+		/* recordToLog */ false,
 		/* piiSafe */ false,
 	)
 }

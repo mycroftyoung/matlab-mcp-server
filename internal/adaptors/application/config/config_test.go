@@ -946,6 +946,60 @@ func TestConfig_RecordToLogger_HappyPath(t *testing.T) {
 	}
 }
 
+func TestConfig_RecordToLogger_OmitsParametersNotRecordedToLog(t *testing.T) {
+	// Arrange
+	mockOSLayer := &configmocks.MockOSLayer{}
+	defer mockOSLayer.AssertExpectations(t)
+
+	mockParser := &configmocks.MockParser{}
+	defer mockParser.AssertExpectations(t)
+
+	mockBuildInfo := &configmocks.MockBuildInfo{}
+	defer mockBuildInfo.AssertExpectations(t)
+
+	programName := "testprocess"
+	args := []string{programName}
+
+	endpointSentinel := "https://sentinel.invalid/v1/metrics"
+	parameters := defaultParameters()
+	parsedArgs := configDefaultParsedArgs()
+	parsedArgs[defaultparameters.TelemetryCollectorEndpoint().GetID()] = endpointSentinel
+
+	mockOSLayer.EXPECT().
+		Args().
+		Return(args).
+		Once()
+
+	mockParser.EXPECT().
+		Parse(args[1:]).
+		Return(parameters, parsedArgs, []string{}, nil).
+		Once()
+
+	cfg, err := config.NewConfig(mockOSLayer, mockParser, mockBuildInfo)
+	require.NoError(t, err)
+
+	testLogger := testutils.NewInspectableLogger()
+
+	// Act
+	cfg.RecordToLogger(testLogger)
+
+	// Assert
+	infoLogs := testLogger.InfoLogs()
+	require.Len(t, infoLogs, 1)
+
+	fields, found := infoLogs["Configuration state"]
+	require.True(t, found, "Expected log message not found")
+
+	for _, param := range parameters {
+		_, logged := fields[param.GetID()]
+		assert.Equal(t, param.GetRecordToLog(), logged, "%s presence in the log should match its recordToLog setting", param.GetID())
+	}
+
+	for id, value := range fields {
+		assert.NotEqual(t, endpointSentinel, value, "%s leaked the telemetry collector endpoint", id)
+	}
+}
+
 func TestNewConfig_ExistingSessionMode_DisallowedParameter(t *testing.T) {
 	disallowedParameters := []entities.Parameter{
 		defaultparameters.PreferredLocalMATLABRoot(),

@@ -4,6 +4,7 @@ package provider
 
 import (
 	"context"
+	"time"
 
 	"github.com/matlab/matlab-mcp-server/internal/adaptors/application/config"
 	"github.com/matlab/matlab-mcp-server/internal/adaptors/telemetry/otel"
@@ -12,6 +13,11 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+)
+
+const (
+	exportTimeout   = 10 * time.Second
+	shutdownTimeout = 3 * time.Second
 )
 
 type LoggerFactory interface {
@@ -44,7 +50,11 @@ func NewFactory(
 	}
 }
 
-func (f *Factory) New(exporter otel.MetricExporter, serviceName, serviceVersion string) (otel.MeterProvider, messages.Error) {
+func (f *Factory) New(
+	exporter otel.MetricExporter,
+	errorHandler otel.ErrorHandler,
+	serviceName, serviceVersion string,
+) (otel.MeterProvider, messages.Error) {
 	logger, messagesErr := f.loggerFactory.GetGlobalLogger()
 	if messagesErr != nil {
 		return nil, messagesErr
@@ -72,6 +82,7 @@ func (f *Factory) New(exporter otel.MetricExporter, serviceName, serviceVersion 
 		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(
 			exporter,
 			sdkmetric.WithInterval(collectionInterval),
+			sdkmetric.WithTimeout(exportTimeout),
 		)),
 	)
 
@@ -79,7 +90,12 @@ func (f *Factory) New(exporter otel.MetricExporter, serviceName, serviceVersion 
 		logger.Debug("Shutting down OTEL meter provider")
 		defer logger.Debug("Done shutting down OTEL meter provider")
 
-		return concreteMeterProvider.Shutdown(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+		if err := concreteMeterProvider.Shutdown(ctx); err != nil {
+			errorHandler.Handle(err)
+		}
+		return nil
 	})
 
 	return concreteMeterProvider, nil

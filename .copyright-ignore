@@ -1,5 +1,6 @@
 cmd/matlab-mcp-server/assets/**
 internal/adaptors/application/config/assets/version
+internal/adaptors/application/parameter/defaultparameters/endpoint_generated.go
 internal/adaptors/mcp/resources/**/*.md
 internal/messages/**
 internal/wire/wire_gen.go

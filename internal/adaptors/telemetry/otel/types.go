@@ -3,6 +3,7 @@
 package otel
 
 import (
+	otelapi "go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 )
@@ -17,4 +18,8 @@ type MetricExporter interface {
 
 type Meter interface {
 	metric.Meter
+}
+
+type ErrorHandler interface {
+	otelapi.ErrorHandler
 }

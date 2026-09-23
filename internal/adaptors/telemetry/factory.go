@@ -31,7 +31,11 @@ type ExporterFactory interface {
 }
 
 type MeterProviderFactory interface {
-	New(exporter otel.MetricExporter, serviceName, serviceVersion string) (otel.MeterProvider, messages.Error)
+	New(
+		exporter otel.MetricExporter,
+		errorHandler otel.ErrorHandler,
+		serviceName, serviceVersion string,
+	) (otel.MeterProvider, messages.Error)
 }
 
 type InstrumentFactory interface {
@@ -158,7 +162,8 @@ func (f *Factory) newOTELTelemetry() (Telemetry, messages.Error) {
 		return nil, err
 	}
 
-	otel.SetErrorHandler(logger)
+	errorHandler := otel.NewErrorHandler(logger)
+	otel.SetErrorHandler(errorHandler)
 
 	logger.Debug("Initializing telemetry")
 	defer logger.Debug("Done initializing telemetry")
@@ -175,10 +180,14 @@ func (f *Factory) newOTELTelemetry() (Telemetry, messages.Error) {
 
 	var meterProvider metric.MeterProvider
 
-	if cfg.DisableTelemetry() || cfg.TelemetryCollectorEndpoint() == "" {
-		logger.Debug("Telemetry is disabled, using noop meter provider")
+	switch {
+	case cfg.DisableTelemetry():
+		logger.Info("Telemetry disabled by configuration")
 		meterProvider = noop.NewMeterProvider()
-	} else {
+	case cfg.TelemetryCollectorEndpoint() == "":
+		logger.Info("Telemetry off: no collector endpoint set")
+		meterProvider = noop.NewMeterProvider()
+	default:
 		logger.Debug("Creating OTEL metric exporter")
 		exporter, err := f.exporterFactory.New()
 		if err != nil {
@@ -186,7 +195,7 @@ func (f *Factory) newOTELTelemetry() (Telemetry, messages.Error) {
 		}
 
 		logger.Debug("Creating OTEL meter provider")
-		concreteMeterProvider, err := f.meterProviderFactory.New(exporter, f.serverDefinition.Name(), cfg.Version())
+		concreteMeterProvider, err := f.meterProviderFactory.New(exporter, errorHandler, f.serverDefinition.Name(), cfg.Version())
 		if err != nil {
 			return nil, err
 		}

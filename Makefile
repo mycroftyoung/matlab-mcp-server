@@ -81,6 +81,8 @@ MLTBX_DIR := $(MATLAB_MCP_SERVER_BUILD_DIR)/mltbx
 SOURCES_HASH_FILE := $(EMBEDDED_MLTBX_DIR)/.sources-hash
 MATLAB_TOOLBOX_DIR := $(CURDIR)/matlab/matlab_mcp_toolbox
 
+TELEMETRY_ENDPOINT_FILE := $(CURDIR)/internal/adaptors/application/parameter/defaultparameters/endpoint_generated.go
+
 MCPB_STAGING_DIR := $(MATLAB_MCP_SERVER_BUILD_DIR)/mcpb
 MCPB_FILENAME := matlab-mcp-server.mcpb
 registry-render: export VERSION := $(value VERSION)
@@ -141,6 +143,18 @@ ifeq ($(RELEASE),true)
 else
 	LDFLAGS_ARG :=
 endif
+
+# Gating on RELEASE, not on the value, stops a developer's environment or .env baking in.
+ifeq ($(RELEASE),true)
+	TAGS_ARG := -tags release
+	VERIFY_ENDPOINT = go run ./cmd/verify-telemetry-endpoint "$(1)"
+else
+	TAGS_ARG :=
+	VERIFY_ENDPOINT =
+endif
+
+# The export lets a "make VAR=value" assignment reach go run's environment.
+export TELEMETRY_COLLECTOR_ENDPOINT
 
 all: wire mockery lint unit-tests integration-tests build mcpb-clean mcpb-dev functional-tests
 
@@ -264,33 +278,42 @@ build: build-for-windows build-for-glnxa64 build-for-maci64 build-for-maca64
 	@$(call CP,$(MACI64_BIN_DIR)/matlab-mcp-server,$(ALL_BIN_DIR)/matlab-mcp-server-macos-x64)
 	@$(call CP,$(WIN64_BIN_DIR)/matlab-mcp-server.exe,$(ALL_BIN_DIR)/matlab-mcp-server-windows-x64.exe)
 
-build-for-windows:
-ifeq ($(OS),Windows_NT)
-	$$env:GOOS='windows'; $$env:GOARCH='amd64'; $$env:CGO_ENABLED='0'; go build $(BUILD_FLAGS) $(LDFLAGS_ARG) -o $(WIN64_BIN_DIR)/matlab-mcp-server.exe ./cmd/matlab-mcp-server
-else
-	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build $(BUILD_FLAGS) $(LDFLAGS_ARG) -o "$(WIN64_BIN_DIR)/matlab-mcp-server.exe" ./cmd/matlab-mcp-server
+generate-telemetry-endpoint:
+ifeq ($(RELEASE),true)
+	go run ./cmd/generate-telemetry-endpoint "$(TELEMETRY_ENDPOINT_FILE)"
 endif
 
-build-for-glnxa64:
+build-for-windows: generate-telemetry-endpoint
 ifeq ($(OS),Windows_NT)
-	$$env:GOOS='linux'; $$env:GOARCH='amd64'; $$env:CGO_ENABLED='0'; go build $(BUILD_FLAGS) $(LDFLAGS_ARG) -o $(GLNXA64_BIN_DIR)/matlab-mcp-server ./cmd/matlab-mcp-server
+	$$env:GOOS='windows'; $$env:GOARCH='amd64'; $$env:CGO_ENABLED='0'; go build $(BUILD_FLAGS) $(LDFLAGS_ARG) $(TAGS_ARG) -o $(WIN64_BIN_DIR)/matlab-mcp-server.exe ./cmd/matlab-mcp-server
 else
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build $(BUILD_FLAGS) $(LDFLAGS_ARG) -o "$(GLNXA64_BIN_DIR)/matlab-mcp-server" ./cmd/matlab-mcp-server
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build $(BUILD_FLAGS) $(LDFLAGS_ARG) $(TAGS_ARG) -o "$(WIN64_BIN_DIR)/matlab-mcp-server.exe" ./cmd/matlab-mcp-server
 endif
+	$(call VERIFY_ENDPOINT,$(WIN64_BIN_DIR)/matlab-mcp-server.exe)
 
-build-for-maci64:
+build-for-glnxa64: generate-telemetry-endpoint
 ifeq ($(OS),Windows_NT)
-	$$env:GOOS='darwin'; $$env:GOARCH='amd64'; $$env:CGO_ENABLED='0'; go build $(BUILD_FLAGS) $(LDFLAGS_ARG) -o $(MACI64_BIN_DIR)/matlab-mcp-server ./cmd/matlab-mcp-server
+	$$env:GOOS='linux'; $$env:GOARCH='amd64'; $$env:CGO_ENABLED='0'; go build $(BUILD_FLAGS) $(LDFLAGS_ARG) $(TAGS_ARG) -o $(GLNXA64_BIN_DIR)/matlab-mcp-server ./cmd/matlab-mcp-server
 else
-	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build $(BUILD_FLAGS) $(LDFLAGS_ARG) -o "$(MACI64_BIN_DIR)/matlab-mcp-server" ./cmd/matlab-mcp-server
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build $(BUILD_FLAGS) $(LDFLAGS_ARG) $(TAGS_ARG) -o "$(GLNXA64_BIN_DIR)/matlab-mcp-server" ./cmd/matlab-mcp-server
 endif
+	$(call VERIFY_ENDPOINT,$(GLNXA64_BIN_DIR)/matlab-mcp-server)
 
-build-for-maca64:
+build-for-maci64: generate-telemetry-endpoint
 ifeq ($(OS),Windows_NT)
-	$$env:GOOS='darwin'; $$env:GOARCH='arm64'; $$env:CGO_ENABLED='0'; go build $(BUILD_FLAGS) $(LDFLAGS_ARG) -o $(MACA64_BIN_DIR)/matlab-mcp-server ./cmd/matlab-mcp-server
+	$$env:GOOS='darwin'; $$env:GOARCH='amd64'; $$env:CGO_ENABLED='0'; go build $(BUILD_FLAGS) $(LDFLAGS_ARG) $(TAGS_ARG) -o $(MACI64_BIN_DIR)/matlab-mcp-server ./cmd/matlab-mcp-server
 else
-	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build $(BUILD_FLAGS) $(LDFLAGS_ARG) -o "$(MACA64_BIN_DIR)/matlab-mcp-server" ./cmd/matlab-mcp-server
+	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build $(BUILD_FLAGS) $(LDFLAGS_ARG) $(TAGS_ARG) -o "$(MACI64_BIN_DIR)/matlab-mcp-server" ./cmd/matlab-mcp-server
 endif
+	$(call VERIFY_ENDPOINT,$(MACI64_BIN_DIR)/matlab-mcp-server)
+
+build-for-maca64: generate-telemetry-endpoint
+ifeq ($(OS),Windows_NT)
+	$$env:GOOS='darwin'; $$env:GOARCH='arm64'; $$env:CGO_ENABLED='0'; go build $(BUILD_FLAGS) $(LDFLAGS_ARG) $(TAGS_ARG) -o $(MACA64_BIN_DIR)/matlab-mcp-server ./cmd/matlab-mcp-server
+else
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build $(BUILD_FLAGS) $(LDFLAGS_ARG) $(TAGS_ARG) -o "$(MACA64_BIN_DIR)/matlab-mcp-server" ./cmd/matlab-mcp-server
+endif
+	$(call VERIFY_ENDPOINT,$(MACA64_BIN_DIR)/matlab-mcp-server)
 
 build-all:
 	@$(call MK_DIR,$(ALL_BIN_DIR))

@@ -1,5 +1,6 @@
 /.bin
 /cover.out
+/internal/adaptors/application/parameter/defaultparameters/endpoint_generated.go
 /vendor
 /.env
 /.registry/server.json

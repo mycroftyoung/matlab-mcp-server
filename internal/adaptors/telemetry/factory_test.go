@@ -155,7 +155,7 @@ func TestFactory_Telemetry_HappyPath(t *testing.T) {
 		Once()
 
 	mockMeterProviderFactory.EXPECT().
-		New(mockExporter, "matlab-mcp-server", "1.0.0").
+		New(mockExporter, mock.Anything, "matlab-mcp-server", "1.0.0").
 		Return(noopMeterProvider, nil).
 		Once()
 
@@ -474,6 +474,7 @@ func TestFactory_Telemetry_TelemetryDisabled(t *testing.T) {
 	// Assert
 	assert.NotNil(t, result)
 	require.NoError(t, err)
+	assert.Contains(t, testLogger.InfoLogs(), "Telemetry disabled by configuration")
 }
 
 func TestFactory_Telemetry_EmptyCollectorEndpoint(t *testing.T) {
@@ -576,6 +577,7 @@ func TestFactory_Telemetry_EmptyCollectorEndpoint(t *testing.T) {
 	// Assert
 	assert.NotNil(t, result)
 	require.NoError(t, err)
+	assert.Contains(t, testLogger.InfoLogs(), "Telemetry off: no collector endpoint set")
 }
 
 func TestFactory_Telemetry_ExporterCreationError(t *testing.T) {
@@ -755,7 +757,7 @@ func TestFactory_Telemetry_MeterProviderCreationError(t *testing.T) {
 		Once()
 
 	mockMeterProviderFactory.EXPECT().
-		New(mockExporter, "matlab-mcp-server", "1.0.0").
+		New(mockExporter, mock.Anything, "matlab-mcp-server", "1.0.0").
 		Return(nil, expectedError).
 		Once()
 
@@ -867,7 +869,7 @@ func TestFactory_Telemetry_InstrumentCreationError(t *testing.T) {
 		Once()
 
 	mockMeterProviderFactory.EXPECT().
-		New(mockExporter, "matlab-mcp-server", "1.0.0").
+		New(mockExporter, mock.Anything, "matlab-mcp-server", "1.0.0").
 		Return(noopMeterProvider, nil).
 		Once()
 
@@ -985,7 +987,7 @@ func TestFactory_Telemetry_IsSingleton(t *testing.T) {
 		Once()
 
 	mockMeterProviderFactory.EXPECT().
-		New(mockExporter, "matlab-mcp-server", "1.0.0").
+		New(mockExporter, mock.Anything, "matlab-mcp-server", "1.0.0").
 		Return(noopMeterProvider, nil).
 		Once()
 

@@ -65,7 +65,7 @@ func (f *Factory) New() (otel.MetricExporter, messages.Error) {
 
 	if !env1Exists && !env2Exists {
 		endpoint := cfg.TelemetryCollectorEndpoint()
-		logger.With("endpoint", endpoint).Debug("Using CLI parameter for OTLP HTTP endpoint")
+		logger.Debug("Using configured OTLP HTTP endpoint")
 		options = append(options, otlpmetrichttp.WithEndpointURL(endpoint))
 
 		// otlpmetrichttp v1.46.0 stopped appending the metrics signal path to a
